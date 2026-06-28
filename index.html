@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portray (刻画) · Interactive Demo</title>
+<style>
+:root{
+  --bg:#fafbfc;--card:#fff;--text:#1a1a1a;--muted:#718096;--border:#e2e8f0;
+  --accent:#10a37f;--accent-hover:#0d8c6e;--danger:#e53e3e;--warn:#dd6b20;
+  --blue:#4299e1;--purple:#9f7aea;--radius:10px;--shadow:0 2px 8px rgba(0,0,0,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* ── Layout ── */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar h1{font-size:15px;font-weight:600}
+.topbar .status{font-size:12px;display:flex;align-items:center;gap:6px}
+.topbar .dot{width:8px;height:8px;border-radius:50%}
+.topbar .dot.online{background:var(--accent);box-shadow:0 0 6px rgba(16,163,127,.4)}
+.topbar .dot.offline{background:var(--danger)}
+.layout{display:flex;min-height:calc(100vh - 52px)}
+.sidebar{width:260px;background:var(--card);border-right:1px solid var(--border);padding:20px;overflow-y:auto;flex-shrink:0}
+.sidebar input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:16px;background:var(--bg)}
+.sidebar input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,163,127,.1)}
+.user-list{list-style:none;max-height:calc(100vh - 200px);overflow-y:auto}
+.user-list li{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:2px;display:flex;align-items:center;gap:8px;transition:background .1s}
+.user-list li:hover{background:var(--bg)}
+.user-list li.active{background:#e6f7f2;color:var(--accent);font-weight:500}
+.user-list .seg{font-size:10px;padding:2px 6px;border-radius:4px;background:#edf2f7;color:var(--muted);white-space:nowrap}
+.main{flex:1;padding:32px;overflow-y:auto;max-width:880px}
+
+/* ── Setup Card ── */
+.setup-card{background:var(--card);border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;margin-bottom:32px}
+.setup-card h2{font-size:18px;margin-bottom:8px}
+.setup-card p{color:var(--muted);font-size:14px;margin-bottom:20px}
+.setup-card code{background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:13px;font-family:"SF Mono",Menlo,monospace}
+.setup-card ol{text-align:left;max-width:440px;margin:0 auto;line-height:2.2;font-size:14px}
+.setup-card ol li{margin-bottom:4px}
+.setup-card .check-btn{padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:20px;font-size:14px;font-weight:500;cursor:pointer;margin-top:16px}
+.setup-card .check-btn:hover{background:var(--accent-hover)}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:0;margin-bottom:20px;background:#edf2f7;border-radius:8px;padding:3px;width:fit-content}
+.tab{padding:8px 18px;border:none;background:none;font-size:13px;cursor:pointer;border-radius:6px;color:var(--muted);transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);color:var(--accent);font-weight:500}
+
+/* ── Cards ── */
+.card{background:var(--card);border-radius:var(--radius);padding:20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:var(--shadow)}
+.card h3{font-size:14px;font-weight:600;margin-bottom:12px}
+.card .muted{color:var(--muted);font-size:12px}
+
+/* ── Profile Detail ── */
+.profile-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.avatar{width:48px;height:48px;border-radius:50%;background:#e6f7f2;color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
+.profile-header .info h2{font-size:18px;font-weight:600}
+.profile-header .info p{font-size:12px;color:var(--muted)}
+
+.tag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:12px}
+.tag-item{background:var(--bg);border-radius:8px;padding:10px 12px;border:1px solid var(--border);font-size:12px}
+.tag-item .dim-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.tag-item .tag-val{font-weight:500;font-size:13px}
+.tag-item .tag-conf{font-size:11px;color:var(--muted);float:right}
+
+.score-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.score-item{text-align:center;padding:12px}
+.score-item .name{font-size:11px;color:var(--muted);margin-bottom:4px}
+.score-item .num{font-size:20px;font-weight:600}
+.score-item .bar-wrap{height:5px;background:#edf2f7;border-radius:3px;margin-top:6px;overflow:hidden}
+.score-item .bar-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* ── Scenario Grid ── */
+.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.item-card{background:var(--bg);border-radius:8px;padding:12px;border:1px solid var(--border);font-size:13px}
+.item-card .title{font-weight:500;margin-bottom:4px}
+.item-card .meta{font-size:11px;color:var(--muted)}
+.item-card .val{font-size:12px;font-weight:500;color:var(--accent)}
+
+/* ── Similar ── */
+.sim-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.sim-card{background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--border);cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center;transition:all .1s}
+.sim-card:hover{background:#e6f7f2;border-color:var(--accent)}
+.sim-card .uid{font-weight:500}
+.sim-card .pct{font-size:12px;color:var(--accent);font-weight:500}
+
+/* ── Loading / Error ── */
+.loading{text-align:center;padding:60px 20px;color:var(--muted)}
+.spinner{width:28px;height:28px;border:3px solid #edf2f7;border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-msg{background:#fff5f5;border:1px solid #fed7d7;color:var(--danger);padding:14px;border-radius:8px;font-size:13px;margin:12px 0}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .layout{flex-direction:column}
+  .sidebar{width:100%;max-height:200px;border-right:none;border-bottom:1px solid var(--border)}
+  .main{padding:20px}
+  .score-row{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <h1>刻画 · Interactive Demo</h1>
+  <div class="status">
+    <span id="apiStatus">Checking...</span>
+    <div class="dot offline" id="apiDot"></div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <input type="text" id="userSearch" placeholder="Search user ID..." oninput="filterUsers()">
+  <ul class="user-list" id="userList"><li class="loading">Loading users...</li></ul>
+</aside>
+
+<!-- ── Main Content ── -->
+<main class="main" id="mainContent">
+
+  <!-- Setup Guide -->
+  <div id="setupGuide" class="setup-card">
+    <h2>Setup Your Local Engine</h2>
+    <p style="margin-bottom:4px">Connect to your local compute to power this demo.</p>
+    <p style="font-size:12px;color:var(--warn);margin-top:0">The compute engine runs entirely on your machine.</p>
+    <ol>
+      <li>Install dependencies: <code>pip install -r requirements.txt</code></li>
+      <li>Start the engine: <code>python -m uvicorn api:app --port 8080</code></li>
+      <li>Wait for initialization (1000 profiles, ~2s)</li>
+    </ol>
+    <button class="check-btn" onclick="checkConnection()">Test Connection</button>
+    <p style="font-size:11px;color:var(--muted);margin-top:12px">API: http://127.0.0.1:8080</p>
+  </div>
+
+</main>
+
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8080';
+let allUsers = [];
+let currentUserId = null;
+
+// ── Connection ──
+async function checkConnection(){
+  document.getElementById('apiStatus').textContent = 'Connecting...';
+  try{
+    const r = await fetch(API + '/health', {signal: AbortSignal.timeout(3000)});
+    if(r.ok){
+      document.getElementById('apiDot').className = 'dot online';
+      document.getElementById('apiStatus').textContent = 'Connected';
+      document.getElementById('setupGuide').style.display = 'none';
+      await loadUsers();
+    }
+  }catch(e){
+    document.getElementById('apiDot').className = 'dot offline';
+    document.getElementById('apiStatus').textContent = 'Disconnected';
+    setTimeout(checkConnection, 3000);
+  }
+}
+
+async function loadUsers(){
+  try{
+    const r = await fetch(API + '/api/users?page=1&page_size=500');
+    const data = await r.json();
+    allUsers = data.users || [];
+    renderUserList(allUsers);
+    if(allUsers.length > 0){
+      currentUserId = allUsers[0].user_id;
+      selectUser(currentUserId);
+    }
+  }catch(e){
+    document.getElementById('userList').innerHTML = '<li class="loading">Failed to load</li>';
+  }
+}
+
+function renderUserList(users){
+  const list = document.getElementById('userList');
+  list.innerHTML = users.map(u =>
+    `<li class="${u.user_id === currentUserId ? 'active' : ''}" onclick="selectUser('${u.user_id}')">
+      ${u.user_id}
+      <span class="seg">${u.segment}</span>
+    </li>`
+  ).join('');
+}
+
+function filterUsers(){
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  const filtered = q ? allUsers.filter(u => u.user_id.toLowerCase().includes(q)) : allUsers;
+  renderUserList(filtered.slice(0, 100));
+}
+
+// ── Select User ──
+async function selectUser(userId){
+  currentUserId = userId;
+  document.querySelectorAll('.user-list li').forEach(li => {
+    li.classList.toggle('active', li.textContent.trim().startsWith(userId));
+  });
+  showProfile();
+}
+
+// ── Tab Router ──
+function showProfile(){ renderTabs('profile'); renderProfile(); }
+function showTags(){ renderTabs('tags'); renderTagsView(); }
+function showScenarios(){ renderTabs('scenarios'); renderScenariosView(); }
+function showLookalike(){ renderTabs('lookalike'); renderLookalikeView(); }
+function showCultural(){ renderTabs('cultural'); renderCulturalView(); }
+
+function renderTabs(active){
+  const tabs = ['profile','tags','scenarios','lookalike','cultural'];
+  const labels = {profile:'Profile',tags:'Tags',scenarios:'Scenarios',lookalike:'Lookalike',cultural:'Cross-Cultural'};
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      ${tabs.map(t => `<button class="tab${t===active?' active':''}" onclick="show${t.charAt(0).toUpperCase()+t.slice(1)}()">${labels[t]}</button>`).join('')}
+    </div>
+    <div id="tabContent"><div class="loading"><div class="spinner"></div>Loading</div></div>`;
+}
+
+// ── Profile View ──
+async function renderProfile(){
+  const container = document.getElementById('tabContent');
+  try{
+    const r = await fetch(API + '/api/profile/' + currentUserId);
+    const p = await r.json();
+    const scores = p.scores || {};
+
+    container.innerHTML = `
+      <div class="card">
+        <div class="profile-header">
+          <div class="avatar">${p.user_id.slice(-2)}</div>
+          <div class="info">
+            <h2>${p.user_id}</h2>
+            <p>Segment: ${p.segment} &middot; Updated: ${p.updated_at}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Predictive Scores</h3>
+        <div class="score-row">
+          ${[{label:'Churn Risk',key:'churn_risk',color:'#e53e3e',fmt:v=>Math.round(v*100)+'%'},
+             {label:'LTV Score',key:'ltv_score',color:'#2b6cb0',fmt:v=>'¥'+v.toFixed(0)},
+             {label:'Purchase Intent',key:'purchase_intent',color:var=>var>0.5?'var(--accent)':'var(--muted)',fmt:v=>Math.round(v*100)+'%'},
+             {label:'Activity',key:'activity_score',color:'#9f7aea',fmt:v=>Math.round(v*100)+'%'}]
+             .map(s => {
+               const v = scores[s.key] || 0;
+               return `<div class="score-item">
+                 <div class="name">${s.label}</div>
+                 <div class="num" style="color:${typeof s.color==='function'?s.color(v):s.color}">${s.fmt(v)}</div>
+                 <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,v*100)}%;background:${typeof s.color==='function'?s.color(v):s.color}"></div></div>
+               </div>`;
+             }).join('')}
+        </div>
+      </div>`;
+  }catch(e){
+    container.innerHTML = `<div class="error-msg">Failed to load profile: ${e.message}</div>`;
+  }
+}
+
+// ── Tags View ──
+async function renderTagsView(){
+  const container = document.getElementById('tabContent');
+  try{
+    const r = await fetch(API + '/api/profile/' + currentUserId);
+    const p = await r.json();
+    const tags = p.tags || {};
+    const dimNames = {demographic:'Demographic',behavioral:'Behavioral',preference:'Preference',predictive:'Predictive',cultural:'Cultural'};
+    let html = '';
+    for(const [dim, ts] of Object.entries(tags)){
+      html += `<div class="card">
+        <h3>${dimNames[dim] || dim}</h3>
+        <div class="tag-grid">`;
+      for(const t of ts){
+        html += `<div class="tag-item">
+          <div class="dim-label">${t.cn_name || t.key}</div>
+          <div class="tag-val">${t.value}<span class="tag-conf">${(t.confidence*100).toFixed(0)}%</span></div>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+    container.innerHTML = html || '<div class="empty">No tags found</div>';
+  }catch(e){
+    container.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+// ── Scenarios View ──
+async function renderScenariosView(){
+  const container = document.getElementById('tabContent');
+  try{
+    const [ecom_r, content_r, ads_r] = await Promise.all([
+      fetch(API + '/api/scenario/ecommerce/' + currentUserId),
+      fetch(API + '/api/scenario/content/' + currentUserId),
+      fetch(API + '/api/scenario/ads/' + currentUserId)
+    ]);
+    const ecom = await ecom_r.json();
+    const content = await content_r.json();
+    const ads = await ads_r.json();
+
+    container.innerHTML = `
+      <div class="card"><h3>E-Commerce Recommendations</h3>
+        <div class="item-grid">${(ecom.recommendations||[]).map((r,i) => `
+          <div class="item-card">
+            <div class="title">#${i+1} ${r.name}</div>
+            <div class="meta">${r.category} &middot; ${r.reason}</div>
+            <div class="val">¥${r.price} &middot; Score: ${r.score}</div>
+          </div>`).join('') || '<div class="empty">No data</div>'}</div></div>
+
+      <div class="card"><h3>Content Push</h3>
+        <div class="item-grid">${(content.contents||[]).map((c,i) => `
+          <div class="item-card">
+            <div class="title">#${i+1} ${c.title}</div>
+            <div class="meta">${c.type} &middot; ${c.push_time} &middot; ${c.device_hint}</div>
+            <div class="val">Score: ${c.score}</div>
+          </div>`).join('') || '<div class="empty">No data</div>'}</div></div>
+
+      <div class="card"><h3>Ad Targeting</h3>
+        <div class="item-grid">${(ads.ads||[]).map((a,i) => `
+          <div class="item-card">
+            <div class="title">${a.ad_name}</div>
+            <div class="meta">${a.target_reason}</div>
+            <div class="val">CPM: ¥${a.bid_cpm} &middot; Match: ${Math.round(a.match_score*100)}%</div>
+          </div>`).join('') || '<div class="empty">No data</div>'}</div></div>`;
+  }catch(e){
+    container.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+// ── Lookalike View ──
+async function renderLookalikeView(){
+  const container = document.getElementById('tabContent');
+  try{
+    const r = await fetch(API + '/api/similar/' + currentUserId + '?top_k=50');
+    const data = await r.json();
+    container.innerHTML = `<div class="card">
+      <h3>Seed: ${data.user_id}</h3>
+      <p class="muted" style="margin-bottom:12px">Lookalike expansion via cosine similarity (128-dim embedding)</p>
+      <div class="sim-grid">
+        ${(data.similar_users||[]).map((u,i) => `
+          <div class="sim-card" onclick="selectUser('${u.user_id}')">
+            <span class="uid">#${i+1} ${u.user_id}</span>
+            <span class="pct">${(u.similarity*100).toFixed(2)}%</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }catch(e){
+    container.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+// ── Cultural View ──
+async function renderCulturalView(){
+  const container = document.getElementById('tabContent');
+  container.innerHTML = `<div class="card">
+    <h3>Cross-Cultural Profiling</h3>
+    <p class="muted">Powered by Hofstede 6-Dimension Model (Geert Hofstede, 1980).<br>
+    The local engine supports zh_CN, pt_BR, and pt_PT regions with localized tags and strategy adjustments.</p>
+    <p class="muted" style="margin-top:8px">Cultural distance: China vs Brazil = 76.97 (significant), requires localized strategy redesign.</p>
+  </div>`;
+}
+
+// ── Init ──
+checkConnection();
+</script>
+</body>
+</html>

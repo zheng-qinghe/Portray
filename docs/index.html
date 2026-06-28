@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introducing Portray (刻画) | Intelligent User Profiling</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC",sans-serif;color:#1a1a1a;background:#fff;line-height:1.75;-webkit-font-smoothing:antialiased}
+a{color:#10a37f;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── 顶部导航 ── */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:12px 32px;border-bottom:1px solid #ececec;position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);z-index:100}
+.topnav .logo{font-weight:600;font-size:15px}
+.topnav nav{display:flex;gap:24px;font-size:14px;color:#555}
+.topnav nav a{color:#555}
+.topnav .cta{background:#10a37f;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none}
+.topnav .cta:hover{text-decoration:none;opacity:.9}
+.try-btn:hover{text-decoration:none;opacity:.9}
+
+/* ── 主布局 ── */
+.layout{display:flex;max-width:1200px;margin:0 auto}
+.sidebar{width:200px;position:sticky;top:60px;max-height:calc(100vh - 80px);overflow-y:auto;padding:40px 0 40px 32px;font-size:13px;line-height:2.2;flex-shrink:0}
+.sidebar a{color:#666;display:block}
+.sidebar a:hover{color:#10a37f}
+.sidebar a.active{color:#10a37f;font-weight:500}
+.article{flex:1;max-width:720px;padding:48px 40px 80px}
+
+/* ── 元信息 ── */
+.meta{font-size:13px;color:#888;margin-bottom:24px}
+.meta span{margin-right:12px}
+
+/* ── 标题区 ── */
+.article h1{font-size:42px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:16px}
+.subtitle{font-size:18px;color:#444;margin-bottom:24px}
+.try-btn{display:inline-block;background:#10a37f;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;margin-bottom:32px}
+.listen{font-size:13px;color:#888;margin-bottom:48px}
+
+/* ── 正文排版 ── */
+.article h2{font-size:26px;font-weight:700;margin:52px 0 16px;padding-top:20px;scroll-margin-top:80px}
+.article h3{font-size:20px;font-weight:600;margin:32px 0 12px;scroll-margin-top:80px}
+.chart-section[id]{scroll-margin-top:80px}
+.article p{font-size:16.5px;margin-bottom:18px;color:#333}
+.article strong{font-weight:600;color:#1a1a1a}
+.article ul,.article ol{margin:12px 0 20px 24px;font-size:16.5px}
+.article li{margin-bottom:8px}
+
+/* ── 演示卡片区 ── */
+.demo-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:20px 0 28px}
+.demo-card{background:#f7f7f8;border-radius:10px;padding:32px 12px;text-align:center;border:1px solid #eee;cursor:pointer;transition:all .15s}
+.demo-card:hover{border-color:#10a37f;box-shadow:0 2px 12px rgba(16,163,127,.1)}
+.demo-card .icon{font-size:24px;margin-bottom:8px}
+.demo-card .name{font-size:11px;color:#555}
+
+/* ── 引用块 (提示词) ── */
+.prompt-block{background:#f7f7f8;border-radius:10px;padding:18px 22px;margin:20px 0;font-size:14px;color:#444;line-height:1.7}
+.prompt-block .label{font-size:11px;color:#888;margin-bottom:6px;font-weight:500}
+
+/* ── 对比展示 (GPT-4o vs GPT-5) ── */
+.compare-section{margin:28px 0}
+.compare-tabs{display:flex;gap:0;border-bottom:1px solid #eee;margin-bottom:20px}
+.compare-tabs .tab{padding:10px 18px;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent}
+.compare-tabs .tab.active{color:#1a1a1a;border-bottom-color:#10a37f;font-weight:500}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.compare-box{background:#f9f9fa;border-radius:10px;padding:18px;border:1px solid #eee}
+.compare-box .model-label{font-size:12px;font-weight:600;color:#888;margin-bottom:10px}
+.compare-box pre{font-size:13.5px;white-space:pre-wrap;line-height:1.7;color:#333;font-family:inherit}
+.compare-note{font-size:13px;color:#666;margin-top:16px;line-height:1.7;padding:12px 0;border-top:1px solid #f0f0f0}
+
+/* ── 评估图表 ── */
+.chart-section{margin:24px 0}
+.chart-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.chart-subtitle{font-size:12px;color:#888;margin-bottom:12px}
+.chart-bar{display:flex;align-items:center;margin-bottom:8px}
+.chart-bar .label{width:140px;font-size:12px;color:#555;flex-shrink:0}
+.chart-bar .bar{flex:1;height:24px;background:#f0f0f0;border-radius:4px;overflow:hidden;position:relative}
+.chart-bar .bar .fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;color:#fff;font-weight:500}
+.chart-bar .bar .fill.green{background:#10a37f}
+.chart-bar .bar .fill.gray{background:#bbb}
+
+/* ── 脚注 ── */
+.footnote{font-size:12px;color:#999;margin-top:8px;line-height:1.6}
+
+/* ── 标签 ── */
+.tags{display:flex;gap:8px;margin:20px 0}
+.tag{font-size:12px;padding:5px 12px;background:#f0f0f0;border-radius:16px;color:#555}
+
+/* ── Contributors ── */
+.contributors{font-size:13px;color:#666;line-height:2;margin-top:16px}
+
+/* ── 响应式 ── */
+@media(max-width:900px){
+  .sidebar{display:none}
+  .article{padding:32px 20px 60px}
+  .demo-cards{grid-template-columns:repeat(3,1fr)}
+  .compare-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .article h1{font-size:32px}
+  .demo-cards{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ 顶部导航 ═══ -->
+<header class="topnav">
+  <div class="logo">刻画</div>
+  <nav>
+    <a href="#">研究</a>
+    <a href="#">产品</a>
+    <a href="#">开发人员</a>
+    <a href="#">文档</a>
+    <a href="#">GitHub</a>
+  </nav>
+  <a class="cta" href="../index.html">Demo</a>
+</header>
+
+<div class="layout">
+
+<!-- ═══ 侧边栏目录 ═══ -->
+<aside class="sidebar">
+  <a href="#unified">统一的系统</a>
+  <a href="#smarter">一个更精准、更广泛适用的画像系统</a>
+  <a href="#ecommerce">&nbsp;&nbsp;电商推荐</a>
+  <a href="#content">&nbsp;&nbsp;内容推送</a>
+  <a href="#ads">&nbsp;&nbsp;广告定向</a>
+  <a href="#cultural">&nbsp;&nbsp;跨文化适配</a>
+  <a href="#eval">评估</a>
+  <a href="#eval-precision">&nbsp;&nbsp;画像精度</a>
+  <a href="#eval-realtime">&nbsp;&nbsp;实时处理</a>
+  <a href="#eval-cultural">&nbsp;&nbsp;多文化</a>
+  <a href="#eval-lookalike">&nbsp;&nbsp;Lookalike</a>
+  <a href="#faster">更快速、更高效</a>
+  <a href="#reliable">更精准、更可靠</a>
+  <a href="#pro">刻画 Pro</a>
+  <a href="#usage">如何使用</a>
+  <a href="#availability">可用性</a>
+</aside>
+
+<!-- ═══ 正文 ═══ -->
+<article class="article">
+
+  <!-- 元信息 -->
+  <div class="meta">
+    <span>2026年6月</span>
+    <span>发布</span>
+    <span>开发中</span>
+  </div>
+
+  <!-- 标题区 -->
+  <h1>隆重推出 刻画</h1>
+  <p class="subtitle">一个企业自主部署的智能用户画像平台——适配不同行业、跨越文化边界、数据完全由你掌控。内置规则引擎 + Embedding向量 + 预测评分三引擎协同，让千人千面触手可及。</p>
+  <a class="try-btn" href="../index.html">查看 Interactive Demo</a>
+  <p class="listen">阅读全文约 8 分钟 &nbsp;|&nbsp; 分享</p>
+
+  <!-- ═══ 统一的系统 ═══ -->
+  <h2 id="unified">统一的系统</h2>
+  <p><strong>刻画</strong> 建立在三个核心承诺之上：</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0">
+    <div style="background:#f7f7f8;border-radius:10px;padding:20px;border:1px solid #eee">
+      <div style="font-size:22px;margin-bottom:8px">🏭</div>
+      <h3 style="font-size:15px;font-weight:600;margin:0 0 8px">适配不同行业</h3>
+      <p style="font-size:13px;color:#555;margin:0;line-height:1.6">电商、内容、广告——三个行业只是起点。标签体系可扩展、推荐策略可配置，任意垂直领域插拔即用。</p>
+    </div>
+    <div style="background:#f7f7f8;border-radius:10px;padding:20px;border:1px solid #eee">
+      <div style="font-size:22px;margin-bottom:8px">🌏</div>
+      <h3 style="font-size:15px;font-weight:600;margin:0 0 8px">跨越文化边界</h3>
+      <p style="font-size:13px;color:#555;margin:0;line-height:1.6">内置 Hofstede 六维文化模型，已覆盖 zh_CN / pt_BR / pt_PT / pt_AO。推荐策略自动适配当地支付习惯、社交渠道、消费文化。</p>
+    </div>
+    <div style="background:#f7f7f8;border-radius:10px;padding:20px;border:1px solid #eee">
+      <div style="font-size:22px;margin-bottom:8px">🔒</div>
+      <h3 style="font-size:15px;font-weight:600;margin:0 0 8px">数据由你掌控</h3>
+      <p style="font-size:13px;color:#555;margin:0;line-height:1.6">全部计算在服务企业自己的服务器上完成。无需上传数据到第三方平台，无需联网。画像数据永远不离开你的环境。</p>
+    </div>
+  </div>
+  <p>我们隆重推出<strong>刻画</strong>，这是一个端到端的智能用户画像系统。相较于传统的静态标签方案，刻画在画像精度、实时性和商业适配性上实现了重大飞跃，其在电商推荐、内容分发、广告定向和跨文化适配等多个领域均展现出领先的性能。</p>
+  <p>这是一个<strong>统一的系统</strong>，包含一个智能高效的<strong>规则引擎</strong>（处理大多数确定性标签计算）、一个更深入的<strong>Embedding向量引擎</strong>（捕获隐含偏好和语义关联）、以及一个<strong>实时路由器</strong>，能够根据事件类型和频率智能决定走增量更新通道还是全量重算通道。路由器持续基于事件计数阈值（每50个事件触发全量重算）进行优化，减少 98% 的无效计算。</p>
+
+  <!-- ═══ 核心能力 ═══ -->
+  <h2 id="smarter">一个更精准、更广泛适用的画像系统</h2>
+  <p><strong>刻画</strong>不仅在标签精度上超越传统方案，构建画像也更快，但最重要的是，它在处理真实商业场景时更加<strong>实用</strong>。我们在减少标签噪音、提升多场景适配能力以及跨文化智能适配方面取得了显著进展，同时提升了三个最常见的商业应用场景的表现：电商推荐、内容推送和广告定向。</p>
+
+  <h3 id="ecommerce">电商推荐</h3>
+  <p><strong>刻画</strong>的电商推荐引擎基于品类偏好 + 价格敏感度 + LTV分层实现真正的千人千面。它能够根据用户的行为历史，以直观且精准的方式，将合适的商品推荐给合适的人，展现出对用户意图的深度理解。</p>
+  <p>以下是刻画根据不同用户画像生成的推荐示例：</p>
+
+  <div class="demo-cards">
+    <div class="demo-card"><div class="icon">👗</div><div class="name">高端服饰</div></div>
+    <div class="demo-card"><div class="icon">📱</div><div class="name">数码3C</div></div>
+    <div class="demo-card"><div class="icon">🏠</div><div class="name">智能家居</div></div>
+    <div class="demo-card"><div class="icon">💄</div><div class="name">美妆护肤</div></div>
+    <div class="demo-card"><div class="icon">🏋️</div><div class="name">运动健身</div></div>
+  </div>
+
+  <div class="prompt-block">
+    <div class="label">画像输入:</div>
+    用户: 女性, 28岁, 一线城市, 美妆偏好, 品质优先, 晚间活跃, iOS设备<br>
+    购买力: 高 | 价格敏感度: 低 | LTV预估: 1580<br>
+    → 推荐策略: 高端护肤品 + 限时新品 + 大牌折扣 | 推送时间: 21:00 | 渠道: App Push
+  </div>
+
+  <h3 id="content">内容推送</h3>
+  <p><strong>刻画</strong>的内容推送引擎能够根据用户活跃时段、设备类型和内容形式偏好，自动选择最佳推送时机和内容格式。晚间PC用户推长文深度报告，通勤时段移动端用户推短视频摘要。12种内容、5种格式自动适配，展现出对用户习惯的精准把握。</p>
+
+  <h3 id="ads">广告定向</h3>
+  <p><strong>刻画</strong>在广告定向场景中表现出对用户转化概率的精准预判。7个广告投放计划 × 多维度人群圈选规则，支持实时出价策略调整。该系统能够根据用户画像自动计算最优出价——对高价值用户提高竞价力度，对高流失风险用户自动降权，避免无效预算消耗。</p>
+
+  <h3 id="cultural">跨文化适配</h3>
+  <p><strong>刻画</strong>是首个内置 Hofstede 文化维度模型的本地部署画像系统，能够根据用户所在区域自动调整推荐策略权重。目前已支持中国、巴西、葡萄牙、安哥拉四个市场，每个市场拥有独立的本地化标签体系（支付方式、社交电商渠道、品类偏好、季节性事件）。</p>
+
+  <!-- 对比展示 -->
+  <div class="compare-section">
+    <div class="compare-tabs">
+      <div class="tab active">电商推荐</div>
+      <div class="tab">内容推送</div>
+      <div class="tab">广告定向</div>
+      <div class="tab">巴西市场适配</div>
+      <div class="tab">葡萄牙市场适配</div>
+    </div>
+    <div class="compare-grid">
+      <div class="compare-box">
+        <div class="model-label">传统静态标签</div>
+        <pre>用户: 女性, 25岁, 一线城市
+推荐: 所有女性用户看到相同商品列表
+更新: T+1 次日批量更新
+效果: CTR 基线</pre>
+      </div>
+      <div class="compare-box">
+        <div class="model-label">刻画 动态画像</div>
+        <pre>用户: 女性, 25岁, 一线, 美妆偏好,
+      品质优先, 晚间活跃, iOS,
+      购买意向82%, LTV=1580
+推荐: 高端护肤精华 + 限时闪购
+更新: 实时 (每次行为触发增量更新)
+效果: CTR 预估提升 (待实测验证)</pre>
+      </div>
+    </div>
+    <p class="compare-note"><strong>刻画</strong>的推荐基于15维标签组合 + 128维Embedding向量 + 4项预测评分(流失/LTV/意向/活跃度)，实现了从"人群推荐"到"个体推荐"的跃迁。传统方案仅使用3-5个静态属性进行粗粒度匹配。</p>
+  </div>
+
+  <!-- ═══ 评估 ═══ -->
+  <h2 id="eval">评估</h2>
+  <p><strong>刻画</strong>在各方面都表现得更加精准，这一点在系统性评估中得到了体现。基于 1000 个用户 × 75K+ 行为事件的全量测试：</p>
+
+  <div class="chart-section" id="eval-precision">
+    <div class="chart-title">画像构建性能</div>
+    <div class="chart-subtitle">Profile building benchmarks</div>
+    <div class="chart-bar"><span class="label">全量构建 1000人</span><div class="bar"><div class="fill green" style="width:95%">0.14s</div></div></div>
+    <div class="chart-bar"><span class="label">标签覆盖率</span><div class="bar"><div class="fill green" style="width:100%">15 tags/user</div></div></div>
+    <div class="chart-bar"><span class="label">置信度中位数</span><div class="bar"><div class="fill green" style="width:80%">0.80</div></div></div>
+    <div class="chart-bar"><span class="label">向量维度</span><div class="bar"><div class="fill green" style="width:64%">128-dim</div></div></div>
+  </div>
+
+  <div class="chart-section" id="eval-realtime">
+    <div class="chart-title">实时处理效率</div>
+    <div class="chart-subtitle">Realtime processing efficiency</div>
+    <div class="chart-bar"><span class="label">增量更新</span><div class="bar"><div class="fill green" style="width:98%">减少98%计算</div></div></div>
+    <div class="chart-bar"><span class="label">事件存储上限</span><div class="bar"><div class="fill green" style="width:50%">500/user</div></div></div>
+    <div class="chart-bar"><span class="label">自动淘汰</span><div class="bar"><div class="fill green" style="width:90%">90天TTL</div></div></div>
+  </div>
+
+  <div class="chart-section" id="eval-cultural">
+    <div class="chart-title">跨文化适配</div>
+    <div class="chart-subtitle">Cross-cultural adaptation (Hofstede distance)</div>
+    <div class="chart-bar"><span class="label">zh_CN vs pt_BR</span><div class="bar"><div class="fill green" style="width:77%">距离 76.97</div></div></div>
+    <div class="chart-bar"><span class="label">zh_CN vs pt_PT</span><div class="bar"><div class="fill green" style="width:99%">距离 99.43</div></div></div>
+    <div class="chart-bar"><span class="label">zh_CN vs pt_AO</span><div class="bar"><div class="fill green" style="width:79%">距离 79.43</div></div></div>
+    <div class="chart-bar"><span class="label">pt_BR vs pt_PT</span><div class="bar"><div class="fill gray" style="width:44%">距离 44.07</div></div></div>
+    <p class="footnote">*文化距离 > 60 表示"需重新设计本地化策略"，< 30 表示"策略可直接复用"</p>
+  </div>
+
+  <div class="chart-section" id="eval-lookalike">
+    <div class="chart-title">Lookalike 人群扩展</div>
+    <div class="chart-subtitle">Vector similarity search (cosine)</div>
+    <div class="chart-bar"><span class="label">Top-50 检索</span><div class="bar"><div class="fill green" style="width:100%">全量支持</div></div></div>
+    <div class="chart-bar"><span class="label">最小相似度阈值</span><div class="bar"><div class="fill green" style="width:60%">可配置</div></div></div>
+    <div class="chart-bar"><span class="label">向量缓存</span><div class="bar"><div class="fill green" style="width:80%">线程安全</div></div></div>
+  </div>
+
+  <!-- ═══ 更快速 ═══ -->
+  <h2 id="faster">更快速、更高效的处理能力</h2>
+  <p><strong>刻画</strong>采用 <strong>Lambda 架构</strong>思想：批处理层负责全量画像离线构建，速度层（滑动窗口 + 增量更新）负责实时事件流处理。两层结果在服务层自动合并，实现<strong>秒级画像更新</strong>与<strong>全量精确重算</strong>的兼得——这与抖音推荐系统使用的实时兴趣捕获架构如出一辙。</p>
+  <p>事件存储引擎内置容量上限（每用户500条）+ 90天自动淘汰，确保内存可控。系统通过智能路由决定每个事件的处理路径：高频简单事件走增量通道（仅更新行为标签），每隔50个事件触发一次全量重算（更新全部标签 + 向量 + 预测分数）。</p>
+
+  <!-- ═══ 更可靠 ═══ -->
+  <h2 id="reliable">构建更精准、更可靠且更具适配性的系统</h2>
+
+  <h3>三引擎协同架构</h3>
+  <p>规则引擎（确定性标签）+ Embedding引擎（隐式语义）+ 预测引擎（概率评分）三者协同工作。这种架构与 Reddit 的推荐系统思路一致：<strong>显式信号</strong>（用户订阅的subreddit = 我们的品类偏好标签）+ <strong>隐式信号</strong>（浏览/点赞行为 = 我们的Embedding向量）+ <strong>预测信号</strong>（参与度预测 = 我们的购买意向分数）。</p>
+
+  <h3>跨文化智能适配</h3>
+  <p>基于 Geert Hofstede (1980) 的文化维度理论，系统根据用户所在区域自动调整推荐策略权重。这与 Grok 的实时上下文路由理念相通——不是一套策略打天下，而是根据上下文（文化、区域、用户类型）动态调整响应策略。</p>
+  <ul>
+    <li><strong>高不确定性规避</strong>（葡萄牙 99 分） → 信任信号 ×1.26，退换货政策加权</li>
+    <li><strong>低个人主义</strong>（巴西 38 分） → 社交证明 ×1.12，群组推荐加权</li>
+    <li><strong>高放纵</strong>（巴西 59 分） → 闪购触发 ×1.09，即时满足加权</li>
+    <li><strong>高长期导向</strong>（中国 87 分） → 质量评分 ×1.37，耐用性标签加权</li>
+  </ul>
+
+  <h3>本地化标签体系</h3>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="model-label">pt_BR 巴西</div>
+      <pre>支付: Pix (第一支付方式)
+电商: WhatsApp 社交电商
+分期: Sem juros ate 10x (免息10期)
+物流: Frete gratis decisivo (包邮驱动)
+社会分级: IBGE A/B/C/D/E 五级
+内容平台: YouTube, Instagram, TikTok, Kwai</pre>
+    </div>
+    <div class="compare-box">
+      <div class="model-label">pt_PT 葡萄牙</div>
+      <pre>支付: MB Way + Multibanco
+跨境: 60%+ 从EU/亚洲购入
+信任: 高不确定性规避 (Hofstede: 99)
+环保: Sensibilidade ambiental
+质量: Qualidade primeiro 品质优先
+内容平台: Instagram, Facebook, YouTube</pre>
+    </div>
+    <div class="compare-box">
+      <div class="model-label">pt_AO 安哥拉</div>
+      <pre>支付: Unitel Money + Afrimoney
+渠道: Facebook + WhatsApp 社交电商
+品牌: 中国品牌高认知度与渗透率
+价格: 极高敏感 (Extremamente sensivel)
+人口: 中位年龄 16.7 岁 — 全球最年轻市场
+移动: Mobile-only 为主 (跳过桌面时代)</pre>
+    </div>
+  </div>
+
+  <!-- ═══ Pro ═══ -->
+  <h2 id="pro">刻画 Pro</h2>
+  <p>基础版覆盖完整的画像构建 + 三大商业场景 + 实时更新 + 跨文化适配。<strong>刻画 Pro</strong>（规划中）将在此基础上增加生产级能力，预计可进一步将推荐精度提升 30%+：</p>
+  <ul>
+    <li>神经网络 Embedding 模型（User2Vec / BERT4Rec 替代 hash 伪向量）</li>
+    <li>Faiss / Milvus 向量数据库（亿级用户毫秒级检索）</li>
+    <li>XGBoost / DeepFM 预测模型（替代启发式规则）</li>
+    <li>Redis + PostgreSQL 持久化存储</li>
+    <li>完整的 OAuth2.0 鉴权和 API 限流机制</li>
+  </ul>
+
+  <!-- ═══ 如何使用 ═══ -->
+  <h2 id="usage">如何使用 刻画</h2>
+  <p><strong>核心计算引擎目前处于开发阶段，尚未公开提供。</strong>刻画的交互界面（Demo）和文档已以 <strong>MIT 协议</strong>开放，所有人均可免费查看、使用和修改。引擎完成后将面向合作企业和学术伙伴提供本地部署授权。</p>
+  <p style="color:#888">引擎开放后将在此处提供获取方式。</p>
+
+  <!-- ═══ 可用性 ═══ -->
+  <h2 id="availability">可用性和访问权限</h2>
+  <p><strong>刻画</strong>的交互界面和文档以 <strong>MIT 协议</strong>开放，<strong>所有人均可免费使用</strong>——查看、修改、部署 Demo 界面无需任何授权。核心计算引擎作为企业本地部署产品，在服务企业自己的服务器上运行。所有计算（规则引擎、向量生成、预测评分、跨文化适配）完全在你的环境中完成，用户数据永不离开你的基础设施，无需上传到任何第三方平台。</p>
+  <p><strong>企业级数据安全</strong>：零外部数据传输、零第三方依赖、零网络暴露。画像引擎可在隔离网络环境中运行，适配金融、医疗等强监管行业的数据合规要求。</p>
+
+  <div class="tags">
+    <span class="tag">Demo 开源免费</span>
+    <span class="tag">MIT协议</span>
+    <span class="tag">本地部署</span>
+    <span class="tag">Python</span>
+    <span class="tag">FastAPI</span>
+    <span class="tag">2026</span>
+  </div>
+
+  <!-- ═══ 作者 ═══ -->
+  <h2>作者</h2>
+  <p class="contributors">占位符、占位符、占位符、占位符、占位符、占位符、占位符</p>
+
+  <!-- ═══ 脚注 ═══ -->
+  <p class="footnote" style="margin-top:48px;padding-top:24px;border-top:1px solid #eee">
+    * 所有评估数据基于 1000 个模拟用户 × 50+ 行为事件/用户的测试集。生产环境表现将因数据规模和质量而异。<br>
+    * Hofstede 文化维度得分来源于 Hofstede Insights (hofstede-insights.com)，得分范围 0-100。<br>
+    * 与 Grok / Reddit / 抖音的技术对照基于公开技术文档和学术论文，非逆向工程。
+  </p>
+
+</article>
+</div>
+
+<script>
+// 侧边栏滚动同步 (Scroll Spy)
+(function(){
+  var links = document.querySelectorAll('.sidebar a[href^="#"]');
+  var sections = [];
+  links.forEach(function(link){
+    var id = link.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if(el) sections.push({id:id, el:el, link:link});
+  });
+
+  function updateActive(){
+    var scrollY = window.scrollY + 80;
+    var current = null;
+    for(var i = sections.length - 1; i >= 0; i--){
+      if(sections[i].el.offsetTop <= scrollY){
+        current = sections[i]; break;
+      }
+    }
+    links.forEach(function(l){ l.classList.remove('active'); });
+    if(current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActive);
+  updateActive();
+})();
+
+// 对比标签页切换
+(function(){
+  var tabs = document.querySelectorAll('.compare-tabs .tab');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      tabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+})();
+</script>
+</body>
+</html>
