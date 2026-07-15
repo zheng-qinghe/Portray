@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户画像平台</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f6fa;color:#2c3e50;line-height:1.6}
+h2.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+header{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:600;color:#1a202c}
+header .badge{font-size:12px;background:#ebf8ff;color:#2b6cb0;padding:4px 10px;border-radius:12px}
+
+.layout{display:flex;min-height:calc(100vh - 56px)}
+
+.sidebar{width:280px;background:#fff;border-right:1px solid #e2e8f0;padding:20px;overflow-y:auto;flex-shrink:0}
+.sidebar h3{font-size:13px;color:#718096;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.search-box{width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none;margin-bottom:12px}
+.search-box:focus{border-color:#4299e1;box-shadow:0 0 0 3px rgba(66,153,225,.15)}
+.user-list{list-style:none;max-height:calc(100vh - 220px);overflow-y:auto}
+.user-list li{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center}
+.user-list li:hover{background:#f7fafc}
+.user-list li.active{background:#ebf8ff;color:#2b6cb0;font-weight:500}
+.user-list .segment-tag{font-size:10px;padding:2px 6px;border-radius:4px;background:#edf2f7;color:#4a5568;white-space:nowrap}
+
+.main{flex:1;padding:24px;overflow-y:auto}
+.main .loading{text-align:center;padding:60px;color:#a0aec0}
+
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.card{background:#fff;border-radius:10px;padding:18px 20px;border:1px solid #e2e8f0}
+.card .label{font-size:12px;color:#718096;margin-bottom:4px}
+.card .value{font-size:24px;font-weight:600}
+.card .sub{font-size:12px;color:#a0aec0;margin-top:4px}
+.card.c-blue .value{color:#2b6cb0}
+.card.c-green .value{color:#276749}
+.card.c-coral .value{color:#c05621}
+.card.c-purple .value{color:#553c9a}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.panel{background:#fff;border-radius:10px;padding:20px;border:1px solid #e2e8f0}
+.panel h3{font-size:14px;font-weight:500;margin-bottom:16px;color:#2d3748}
+.panel canvas{max-height:260px}
+
+.tabs{display:flex;gap:0;margin-bottom:16px;background:#edf2f7;border-radius:8px;padding:3px;width:fit-content}
+.tab-btn{padding:8px 18px;border:none;background:none;font-size:13px;cursor:pointer;border-radius:6px;color:#4a5568}
+.tab-btn.active{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);color:#2b6cb0}
+
+.profile-detail{background:#fff;border-radius:10px;padding:20px;border:1px solid #e2e8f0}
+.profile-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.avatar{width:56px;height:56px;border-radius:50%;background:#ebf8ff;color:#2b6cb0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600}
+.tag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tag-card{background:#f7fafc;border-radius:8px;padding:12px;border:1px solid #edf2f7}
+.tag-card .dim{font-size:11px;color:#a0aec0;margin-bottom:4px}
+.tag-card .kv{font-size:13px;display:flex;justify-content:space-between}
+.tag-card .kv .val{font-weight:500}
+.tag-card .kv .conf{font-size:11px;color:#718096}
+.conf-bar{height:3px;background:#edf2f7;border-radius:2px;margin-top:6px}
+.conf-bar .fill{height:100%;border-radius:2px;background:#4299e1}
+
+.score-bars{margin-top:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.score-item{text-align:center}
+.score-item .label{font-size:11px;color:#a0aec0;margin-bottom:4px}
+.score-item .val{font-size:18px;font-weight:600}
+.score-item .sbar{height:6px;background:#edf2f7;border-radius:3px;margin-top:6px;overflow:hidden}
+.score-item .sbar .sfill{height:100%;border-radius:3px}
+
+.scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:12px}
+.scenario-item{background:#f7fafc;border-radius:8px;padding:14px;border:1px solid #edf2f7;display:flex;gap:12px}
+.scenario-item .rank{font-size:18px;font-weight:600;color:#a0aec0;width:24px;flex-shrink:0}
+.scenario-item .info{flex:1}
+.scenario-item .title{font-size:13px;font-weight:500;margin-bottom:4px}
+.scenario-item .meta{font-size:11px;color:#718096}
+.scenario-item .score{font-size:12px;font-weight:600;color:#4299e1}
+
+.similar-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:12px}
+.similar-item{background:#f7fafc;border-radius:8px;padding:12px;border:1px solid #edf2f7;display:flex;justify-content:space-between;align-items:center}
+.similar-item .uid{font-size:13px;font-weight:500}
+.similar-item .sim{font-size:12px;color:#4299e1;font-weight:500}
+
+.error{background:#fff5f5;color:#c53030;padding:12px;border-radius:8px;font-size:13px}
+.empty{text-align:center;padding:40px;color:#a0aec0;font-size:13px}
+
+/* ── Import Section ── */
+.import-section{border-top:1px solid #e2e8f0;padding-top:16px;margin-top:16px}
+.import-section h3{font-size:13px;color:#718096;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.drop-zone{border:2px dashed #cbd5e0;border-radius:8px;padding:20px 12px;text-align:center;font-size:12px;color:#718096;cursor:pointer;transition:all .15s;margin-bottom:10px}
+.drop-zone:hover,.drop-zone.dragover{border-color:#4299e1;background:#ebf8ff;color:#2b6cb0}
+.drop-zone .icon{font-size:20px;margin-bottom:4px}
+.btn{display:inline-block;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-blue{background:#4299e1;color:#fff}
+.btn-blue:hover{background:#3182ce}
+.btn-gray{background:#edf2f7;color:#4a5568;margin-left:6px}
+.btn-gray:hover{background:#e2e8f0}
+.btn-sm{padding:5px 10px;font-size:11px}
+.import-status{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px}
+.import-status.success{background:#f0fff4;color:#276749}
+.import-status.error{background:#fff5f5;color:#c53030}
+.import-status.loading{background:#ebf8ff;color:#2b6cb0}
+#fileInput{display:none}
+</style>
+</head>
+<body>
+
+<h2 class="sr-only">用户画像平台仪表盘 - 概览、用户详情、商业场景演示、相似用户查询</h2>
+
+<header>
+  <h1>用户画像平台</h1>
+  <span class="badge" id="userCount">加载中...</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <h3>用户列表</h3>
+    <input class="search-box" id="userSearch" placeholder="搜索用户ID..." oninput="filterUsers()">
+    <ul class="user-list" id="userList"></ul>
+
+    <div class="import-section">
+      <h3>数据导入</h3>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📂</div>
+        <div>拖拽 CSV 文件到此处<br>或点击选择文件</div>
+      </div>
+      <input type="file" id="fileInput" accept=".csv" onchange="handleFileSelect(event)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-blue btn-sm" onclick="importCSV()">导入 & 重建</button>
+        <a class="btn btn-gray btn-sm" href="/api/template" download>下载模板 ↓</a>
+        <button class="btn btn-gray btn-sm" onclick="resetData()" title="恢复1000模拟用户">↺</button>
+      </div>
+      <div id="importStatus" style="display:none"></div>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent">
+    <div class="loading">加载数据中...</div>
+  </main>
+</div>
+
+<script>
+const API = '';
+
+let allUsers = [];
+let currentUserId = null;
+
+async function fetchJSON(url) {
+  const r = await fetch(API + url);
+  if (!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+
+// ── 初始化 ──────────────────────────────────────────
+async function init() {
+  try {
+    const stats = await fetchJSON('/api/dashboard-stats');
+    const users = await fetchJSON('/api/users?page=1&page_size=200');
+    allUsers = users.users;
+    document.getElementById('userCount').textContent = `${stats.total_users} 个用户`;
+    renderUserList(allUsers);
+    renderOverview(stats);
+    if (allUsers.length > 0) {
+      currentUserId = allUsers[0].user_id;
+      selectUser(currentUserId);
+    }
+  } catch (e) {
+    document.getElementById('mainContent').innerHTML =
+      `<div class="error">加载失败: ${e.message}。请确认API服务已启动。</div>`;
+  }
+}
+
+function renderUserList(users) {
+  const list = document.getElementById('userList');
+  list.innerHTML = users.map(u =>
+    `<li class="${u.user_id === currentUserId ? 'active' : ''}" onclick="selectUser('${u.user_id}')">
+      <span>${u.user_id}</span>
+      <span class="segment-tag">${u.segment}</span>
+    </li>`
+  ).join('');
+}
+
+function filterUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  const filtered = q ? allUsers.filter(u => u.user_id.toLowerCase().includes(q)) : allUsers;
+  renderUserList(filtered.slice(0, 100));
+}
+
+// ── 概览 ────────────────────────────────────────────
+function renderOverview(stats) {
+  const s = stats.segments || {};
+  const total = stats.total_users || 0;
+  const segEntries = Object.entries(s);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="cards">
+      <div class="card c-blue">
+        <div class="label">总用户数</div>
+        <div class="value">${total}</div>
+        <div class="sub">5个分群</div>
+      </div>
+      <div class="card c-green">
+        <div class="label">高价值用户</div>
+        <div class="value">${stats.predictive?.high_value || 0}</div>
+        <div class="sub">LTV > 1000</div>
+      </div>
+      <div class="card c-coral">
+        <div class="label">高流失风险</div>
+        <div class="value">${stats.predictive?.high_churn || 0}</div>
+        <div class="sub">${total ? Math.round(stats.predictive.high_churn / total * 100) : 0}% 的用户</div>
+      </div>
+      <div class="card c-purple">
+        <div class="label">高购买意向</div>
+        <div class="value">${stats.predictive?.high_intent || 0}</div>
+        <div class="sub">可重点转化</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="renderOverview(stats)">概览</button>
+      <button class="tab-btn" onclick="selectUser(currentUserId || allUsers[0]?.user_id)">用户详情</button>
+      <button class="tab-btn" onclick="showScenarios()">商业场景</button>
+      <button class="tab-btn" onclick="showLookalike()">相似用户</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>用户分群分布</h3>
+        <canvas id="segChart"></canvas>
+      </div>
+      <div class="panel">
+        <h3>品类偏好 Top 8</h3>
+        <canvas id="catChart"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>活跃时段分布</h3>
+        <canvas id="timeChart"></canvas>
+      </div>
+      <div class="panel">
+        <h3>设备偏好分布</h3>
+        <canvas id="deviceChart"></canvas>
+      </div>
+    </div>
+  `;
+
+  // 分群饼图
+  new Chart(document.getElementById('segChart'), {
+    type: 'doughnut',
+    data: {
+      labels: segEntries.map(e => e[0]),
+      datasets: [{
+        data: segEntries.map(e => e[1]),
+        backgroundColor: ['#4299e1','#48bb78','#ed8936','#9f7aea','#f56565','#38b2ac'],
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } } }
+    }
+  });
+
+  // 品类偏好
+  const cats = stats.category_interest || {};
+  new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(cats),
+      datasets: [{
+        label: '用户数',
+        data: Object.values(cats),
+        backgroundColor: '#4299e1',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: { size: 11 } } }, y: { ticks: { font: { size: 11 } } } }
+    }
+  });
+
+  // 活跃时段
+  const times = stats.time_preference || {};
+  new Chart(document.getElementById('timeChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(times),
+      datasets: [{
+        label: '用户数',
+        data: Object.values(times),
+        backgroundColor: ['#4299e1','#48bb78','#ed8936','#9f7aea'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { font: { size: 11 } } } }
+    }
+  });
+
+  // 设备偏好
+  const devices = stats.device_type || {};
+  new Chart(document.getElementById('deviceChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(devices),
+      datasets: [{
+        data: Object.values(devices),
+        backgroundColor: ['#4299e1','#48bb78','#9f7aea','#ed8936'],
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } } }
+    }
+  });
+}
+
+// ── 用户详情 ──────────────────────────────────────────
+async function selectUser(userId) {
+  currentUserId = userId;
+  document.querySelectorAll('.user-list li').forEach(li => {
+    li.classList.toggle('active', li.textContent.trim().startsWith(userId));
+  });
+
+  try {
+    const profile = await fetchJSON(`/api/profile/${userId}`);
+    renderProfile(profile);
+  } catch (e) {
+    document.getElementById('mainContent').innerHTML =
+      `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+function renderProfile(profile) {
+  const tags = profile.tags || {};
+  const scores = profile.scores || {};
+  const allTags = [];
+  const dimNames = { demographic: '人口统计', behavioral: '行为属性', preference: '偏好兴趣', predictive: '预测标签' };
+
+  for (const [dim, ts] of Object.entries(tags)) {
+    for (const t of ts) {
+      allTags.push({ ...t, dim, dimName: dimNames[dim] || dim });
+    }
+  }
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      <button class="tab-btn" onclick="location.reload()">概览</button>
+      <button class="tab-btn active">用户详情</button>
+      <button class="tab-btn" onclick="showScenarios()">商业场景</button>
+      <button class="tab-btn" onclick="showLookalike()">相似用户</button>
+    </div>
+
+    <div class="profile-detail">
+      <div class="profile-header">
+        <div class="avatar">${profile.user_id.slice(-2)}</div>
+        <div>
+          <h3 style="font-size:16px">${profile.user_id}</h3>
+          <span style="font-size:12px;color:#718096">分群: ${profile.segment}</span>
+          <span style="font-size:11px;color:#a0aec0;margin-left:12px">更新: ${profile.updated_at}</span>
+        </div>
+      </div>
+
+      <h4 style="font-size:13px;margin-bottom:12px;color:#4a5568">标签体系</h4>
+      <div class="tag-grid">
+        ${allTags.map(t => `
+          <div class="tag-card">
+            <div class="dim">${t.dimName} · ${t.cn_name}</div>
+            <div class="kv">
+              <span class="val">${t.value}</span>
+              <span class="conf">${(t.confidence * 100).toFixed(0)}%</span>
+            </div>
+            <div class="conf-bar"><div class="fill" style="width:${t.confidence * 100}%"></div></div>
+          </div>
+        `).join('')}
+      </div>
+
+      <h4 style="font-size:13px;margin-top:24px;margin-bottom:12px;color:#4a5568">预测得分</h4>
+      <div class="score-bars">
+        <div class="score-item">
+          <div class="label">流失风险</div>
+          <div class="val" style="color:${scores.churn_risk > 0.5 ? '#e53e3e' : scores.churn_risk > 0.2 ? '#ed8936' : '#48bb78'}">${(scores.churn_risk * 100).toFixed(1)}%</div>
+          <div class="sbar"><div class="sfill" style="width:${scores.churn_risk * 100}%;background:${scores.churn_risk > 0.5 ? '#e53e3e' : scores.churn_risk > 0.2 ? '#ed8936' : '#48bb78'}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">LTV 预估</div>
+          <div class="val" style="color:#2b6cb0">${scores.ltv_score.toFixed(0)}</div>
+          <div class="sbar"><div class="sfill" style="width:${Math.min(100, scores.ltv_score / 20)}%;background:#4299e1"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">购买意向</div>
+          <div class="val" style="color:${scores.purchase_intent > 0.5 ? '#48bb78' : '#a0aec0'}">${(scores.purchase_intent * 100).toFixed(1)}%</div>
+          <div class="sbar"><div class="sfill" style="width:${scores.purchase_intent * 100}%;background:${scores.purchase_intent > 0.5 ? '#48bb78' : '#a0aec0'}"></div></div>
+        </div>
+        <div class="score-item">
+          <div class="label">活跃度</div>
+          <div class="val" style="color:#9f7aea">${(scores.activity_score * 100).toFixed(0)}%</div>
+          <div class="sbar"><div class="sfill" style="width:${scores.activity_score * 100}%;background:#9f7aea"></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── 商业场景 ──────────────────────────────────────────
+async function showScenarios() {
+  if (!currentUserId) { document.getElementById('mainContent').innerHTML = '<div class="empty">请先选择一个用户</div>'; return; }
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      <button class="tab-btn" onclick="location.reload()">概览</button>
+      <button class="tab-btn" onclick="selectUser('${currentUserId}')">用户详情</button>
+      <button class="tab-btn active">商业场景</button>
+      <button class="tab-btn" onclick="showLookalike()">相似用户</button>
+    </div>
+    <div id="scenarioContent" class="loading">加载场景数据...</div>
+  `;
+
+  try {
+    const [ecom, content, ads] = await Promise.all([
+      fetchJSON(`/api/scenario/ecommerce/${currentUserId}`),
+      fetchJSON(`/api/scenario/content/${currentUserId}`),
+      fetchJSON(`/api/scenario/ads/${currentUserId}`),
+    ]);
+
+    document.getElementById('scenarioContent').innerHTML = `
+      <div class="panel" style="margin-bottom:16px">
+        <h3>当前用户: ${currentUserId} · ${ecom.profile_summary.segment}</h3>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px">
+        <h3>场景一: 电商推荐</h3>
+        <div class="scenario-grid">
+          ${(ecom.recommendations || []).map((r, i) => `
+            <div class="scenario-item">
+              <div class="rank">${i + 1}</div>
+              <div class="info">
+                <div class="title">${r.name}</div>
+                <div class="meta">${r.category} · ${r.reason}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:14px;font-weight:600">&yen;${r.price}</div>
+                <div class="score">${r.score}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px">
+        <h3>场景二: 内容推送 (当前${content.current_hour}:00)</h3>
+        <div class="scenario-grid">
+          ${(content.contents || []).map((c, i) => `
+            <div class="scenario-item">
+              <div class="rank">${i + 1}</div>
+              <div class="info">
+                <div class="title">${c.title}</div>
+                <div class="meta">${c.type} · 推荐推送: ${c.push_time} · 设备: ${c.device_hint}</div>
+              </div>
+              <div class="score">${c.score}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>场景三: 广告定向</h3>
+        ${ads.ads && ads.ads.length ? `
+          <div class="scenario-grid">
+            ${ads.ads.map((a, i) => `
+              <div class="scenario-item">
+                <div class="rank">${i + 1}</div>
+                <div class="info">
+                  <div class="title">${a.ad_name}</div>
+                  <div class="meta">${a.target_reason}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:13px;font-weight:600">&yen;${a.bid_cpm} CPM</div>
+                  <div class="score">匹配: ${(a.match_score * 100).toFixed(0)}%</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : `<div class="empty">该用户未匹配到广告投放计划</div>`}
+        <div style="font-size:11px;color:#a0aec0;margin-top:8px">共 ${ads.campaign_count} 个广告计划</div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('scenarioContent').innerHTML =
+      `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+// ── Lookalike ────────────────────────────────────────
+async function showLookalike() {
+  if (!currentUserId) { document.getElementById('mainContent').innerHTML = '<div class="empty">请先选择一个用户</div>'; return; }
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tabs">
+      <button class="tab-btn" onclick="location.reload()">概览</button>
+      <button class="tab-btn" onclick="selectUser('${currentUserId}')">用户详情</button>
+      <button class="tab-btn" onclick="showScenarios()">商业场景</button>
+      <button class="tab-btn active">相似用户</button>
+    </div>
+    <div id="lookalikeContent" class="loading">计算向量相似度...</div>
+  `;
+
+  try {
+    const data = await fetchJSON(`/api/similar/${currentUserId}?top_k=50`);
+    document.getElementById('lookalikeContent').innerHTML = `
+      <div class="panel">
+        <h3>种子用户: ${data.user_id}</h3>
+        <p style="font-size:12px;color:#718096;margin-bottom:16px">
+          Lookalike 人群扩展 —— 基于 Embedding 向量余弦相似度
+        </p>
+        <div class="similar-list">
+          ${(data.similar_users || []).map((u, i) => `
+            <div class="similar-item" style="cursor:pointer" onclick="selectUser('${u.user_id}')">
+              <div class="uid">${i + 1}. ${u.user_id}</div>
+              <div>
+                <div class="sim" style="font-size:14px">${(u.similarity * 100).toFixed(2)}%</div>
+                <div style="height:4px;width:80px;background:#edf2f7;border-radius:2px;margin-top:2px">
+                  <div style="height:100%;width:${u.similarity * 100}%;background:#4299e1;border-radius:2px"></div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('lookalikeContent').innerHTML =
+      `<div class="error">加载失败: ${e.message}</div>`;
+  }
+}
+
+// ── 数据导入 ──────────────────────────────────────────
+var selectedFile = null;
+var dz = document.getElementById('dropZone');
+
+dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', function(){ dz.classList.remove('dragover'); });
+dz.addEventListener('drop', function(e){
+  e.preventDefault();
+  dz.classList.remove('dragover');
+  var f = e.dataTransfer.files[0];
+  if(f && f.name.endsWith('.csv')){ selectedFile = f; dz.querySelector('div').innerHTML = '已选择:<br><strong>' + f.name + '</strong>'; }
+});
+
+function handleFileSelect(e){
+  var f = e.target.files[0];
+  if(f){ selectedFile = f; dz.querySelector('div').innerHTML = '已选择:<br><strong>' + f.name + '</strong>'; }
+}
+
+async function importCSV(){
+  if(!selectedFile){ alert('请先选择CSV文件'); return; }
+  var status = document.getElementById('importStatus');
+  status.style.display = 'block';
+  status.className = 'import-status loading';
+  status.textContent = '导入中...';
+
+  var form = new FormData();
+  form.append('file', selectedFile);
+  try{
+    var r = await fetch('/api/import', {method:'POST', body:form});
+    var data = await r.json();
+    if(!r.ok) throw new Error(data.detail || 'Import failed');
+    var msg = '✅ ' + data.users_imported + ' 用户, ' + data.events_imported + ' 事件导入成功！' +
+      (data.use_simulated_events ? ' (自动生成模拟行为事件)' : '');
+    if(data.warnings && data.warnings.length > 0){
+      status.className = 'import-status success';
+      status.innerHTML = msg + '<br>⚠ ' + data.warnings.join('<br>⚠ ');
+    } else {
+      status.className = 'import-status success';
+      status.textContent = msg;
+    }
+    setTimeout(function(){ location.reload(); }, 2000);
+  }catch(e){
+    status.className = 'import-status error';
+    status.textContent = '导入失败: ' + e.message;
+  }
+}
+
+async function resetData(){
+  if(!confirm('将重置为 1000 个模拟用户，当前导入数据会丢失。确认？')) return;
+  var status = document.getElementById('importStatus');
+  status.style.display = 'block';
+  status.className = 'import-status loading';
+  status.textContent = '重置中...';
+  try{
+    var r = await fetch('/api/reset', {method:'POST'});
+    var data = await r.json();
+    status.className = 'import-status success';
+    status.textContent = '✅ 已重置为 ' + data.users + ' 个默认用户';
+    setTimeout(function(){ location.reload(); }, 1000);
+  }catch(e){
+    status.className = 'import-status error';
+    status.textContent = '重置失败';
+  }
+}
+
+// 启动
+init();
+</script>
+</body>
+</html>
