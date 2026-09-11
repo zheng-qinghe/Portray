@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Introducing Portray (刻画) | Intelligent User Profiling</title>
+<title>隆重推出 刻画 | 智能用户画像平台</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -344,8 +344,16 @@ a:hover{text-decoration:underline}
 
   <!-- ═══ 如何使用 ═══ -->
   <h2 id="usage">如何使用 刻画</h2>
-  <p><strong>核心计算引擎目前处于开发阶段，尚未公开提供。</strong>刻画的交互界面（Demo）和文档已以 <strong>MIT 协议</strong>开放，所有人均可免费查看、使用和修改。引擎完成后将面向合作企业和学术伙伴提供本地部署授权。</p>
-  <p style="color:#888">引擎开放后将在此处提供获取方式。</p>
+
+  <div style="border-left:4px solid #f5a623; background:#fff9ec; padding:16px 20px; border-radius:8px; margin:16px 0;">
+    <p style="margin:0 0 8px; font-weight:700; color:#9a6a00;">开源策略说明</p>
+    <p style="margin:0 0 8px; line-height:1.7; color:#555;">
+      本公开仓库（Portray）包含的是 <strong>交互式演示界面（Demo）</strong> 与 <strong>项目文档</strong>，均以 MIT 协议开放，所有人可免费查看、使用和修改。
+    </p>
+    <p style="margin:0; line-height:1.7; color:#555;">
+      <strong>核心计算引擎（用户画像服务器 / Server）</strong> 为闭源产品，包含规则引擎、Embedding 向量生成、预测评分与跨文化适配等全部计算逻辑，以 <strong>企业本地部署</strong> 形式提供，<strong>不在本公开仓库中</strong>。也就是说，clone 本仓库可体验完整前端界面，但底层画像计算需通过团队授权后部署在你自己的服务器上。如有集成或试用需求，请联系我们获取部署授权。
+    </p>
+  </div>
 
   <!-- ═══ 可用性 ═══ -->
   <h2 id="availability">可用性和访问权限</h2>
@@ -355,6 +363,7 @@ a:hover{text-decoration:underline}
   <div class="tags">
     <span class="tag">Demo 开源免费</span>
     <span class="tag">MIT协议</span>
+    <span class="tag">核心引擎闭源</span>
     <span class="tag">本地部署</span>
     <span class="tag">Python</span>
     <span class="tag">FastAPI</span>
