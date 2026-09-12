@@ -68,6 +68,8 @@ a:hover{text-decoration:underline}
 .compare-box .model-label{font-size:12px;font-weight:600;color:#888;margin-bottom:10px}
 .compare-box pre{font-size:13.5px;white-space:pre-wrap;line-height:1.7;color:#333;font-family:inherit}
 .compare-note{font-size:13px;color:#666;margin-top:16px;line-height:1.7;padding:12px 0;border-top:1px solid #f0f0f0}
+.compare-panel{display:none}
+.compare-panel.active{display:block}
 
 /* ── 评估图表 ── */
 .chart-section{margin:24px 0}
@@ -214,31 +216,119 @@ a:hover{text-decoration:underline}
   <!-- 对比展示 -->
   <div class="compare-section">
     <div class="compare-tabs">
-      <div class="tab active">电商推荐</div>
-      <div class="tab">内容推送</div>
-      <div class="tab">广告定向</div>
-      <div class="tab">巴西市场适配</div>
-      <div class="tab">葡萄牙市场适配</div>
+      <div class="tab active" data-tab="ecommerce">电商推荐</div>
+      <div class="tab" data-tab="content">内容推送</div>
+      <div class="tab" data-tab="ads">广告定向</div>
+      <div class="tab" data-tab="brazil">巴西市场适配</div>
+      <div class="tab" data-tab="portugal">葡萄牙市场适配</div>
     </div>
-    <div class="compare-grid">
-      <div class="compare-box">
-        <div class="model-label">传统静态标签</div>
-        <pre>用户: 女性, 25岁, 一线城市
+
+    <!-- 电商推荐 -->
+    <div class="compare-panel active" id="panel-ecommerce">
+      <div class="compare-grid">
+        <div class="compare-box">
+          <div class="model-label">传统静态标签</div>
+          <pre>用户: 女性, 25岁, 一线城市
 推荐: 所有女性用户看到相同商品列表
 更新: T+1 次日批量更新
 效果: CTR 基线</pre>
-      </div>
-      <div class="compare-box">
-        <div class="model-label">刻画 动态画像</div>
-        <pre>用户: 女性, 25岁, 一线, 美妆偏好,
+        </div>
+        <div class="compare-box">
+          <div class="model-label">刻画 动态画像</div>
+          <pre>用户: 女性, 25岁, 一线, 美妆偏好,
       品质优先, 晚间活跃, iOS,
       购买意向82%, LTV=1580
 推荐: 高端护肤精华 + 限时闪购
 更新: 实时 (每次行为触发增量更新)
 效果: CTR 预估提升 (待实测验证)</pre>
+        </div>
       </div>
+      <p class="compare-note"><strong>刻画</strong>的推荐基于15维标签组合 + 128维Embedding向量 + 4项预测评分(流失/LTV/意向/活跃度)，实现了从"人群推荐"到"个体推荐"的跃迁。传统方案仅使用3-5个静态属性进行粗粒度匹配。</p>
     </div>
-    <p class="compare-note"><strong>刻画</strong>的推荐基于15维标签组合 + 128维Embedding向量 + 4项预测评分(流失/LTV/意向/活跃度)，实现了从"人群推荐"到"个体推荐"的跃迁。传统方案仅使用3-5个静态属性进行粗粒度匹配。</p>
+
+    <!-- 内容推送 -->
+    <div class="compare-panel" id="panel-content">
+      <div class="compare-grid">
+        <div class="compare-box">
+          <div class="model-label">传统静态标签</div>
+          <pre>用户: 通勤时段, 移动端
+推送: 固定早8点广播式推送
+内容: 统一图文, 与个人兴趣无关
+打开率: 基线</pre>
+        </div>
+        <div class="compare-box">
+          <div class="model-label">刻画 动态画像</div>
+          <pre>用户: 晚间PC深度阅读 / 通勤移动短视频
+内容: 12种内容 × 5种格式自动适配
+时机: 按活跃时段+设备动态选择
+打开率: 精准推送预估提升 (待实测)</pre>
+        </div>
+      </div>
+      <p class="compare-note"><strong>刻画</strong>的内容推送引擎按活跃时段、设备类型、内容形式三维自动适配——晚间PC用户推长文深度报告，通勤移动端推短视频摘要，12种内容×5种格式无需人工配置。</p>
+    </div>
+
+    <!-- 广告定向 -->
+    <div class="compare-panel" id="panel-ads">
+      <div class="compare-grid">
+        <div class="compare-box">
+          <div class="model-label">传统静态标签</div>
+          <pre>人群: 按性别+年龄粗粒度圈选
+出价: 统一固定出价
+策略: 无法区分高/低价值用户
+预算: 高流失用户持续消耗</pre>
+        </div>
+        <div class="compare-box">
+          <div class="model-label">刻画 动态画像</div>
+          <pre>人群: 7计划 × 多维规则圈选
+出价: 实时竞价, 高价值提价
+策略: 高流失风险用户自动降权
+预算: 无效曝光自动拦截</pre>
+        </div>
+      </div>
+      <p class="compare-note"><strong>刻画</strong>基于转化概率预判自动计算最优出价——高价值用户提高竞价力度，高流失风险用户自动降权，避免无效预算消耗。</p>
+    </div>
+
+    <!-- 巴西市场适配 -->
+    <div class="compare-panel" id="panel-brazil">
+      <div class="compare-grid">
+        <div class="compare-box">
+          <div class="model-label">传统静态标签</div>
+          <pre>标签: 直接复用中文标签体系
+支付: 忽略本地支付习惯
+渠道: 无本地社交电商接入
+效果: 本地转化率差</pre>
+        </div>
+        <div class="compare-box">
+          <div class="model-label">刻画 动态画像</div>
+          <pre>标签: pt_BR 独立本地化标签
+支付: 内置 PIX 即时支付识别
+渠道: WhatsApp/Instagram 社交电商
+效果: 文化距离 76.97, 需本地化重构</pre>
+        </div>
+      </div>
+      <p class="compare-note"><strong>刻画</strong>为巴西市场建立独立的 pt_BR 本地化标签体系，内置 PIX 支付识别与 WhatsApp/Instagram 社交电商渠道适配。中巴文化距离 76.97（&gt;60 需重新设计本地化策略）。</p>
+    </div>
+
+    <!-- 葡萄牙市场适配 -->
+    <div class="compare-panel" id="panel-portugal">
+      <div class="compare-grid">
+        <div class="compare-box">
+          <div class="model-label">传统静态标签</div>
+          <pre>标签: 直接复用中文标签体系
+语言: 仅简体中文模板
+事件: 无本地季节性事件
+效果: 文化隔阂导致转化低</pre>
+        </div>
+        <div class="compare-box">
+          <div class="model-label">刻画 动态画像</div>
+          <pre>标签: pt_PT 独立本地化标签
+语言: 欧葡(PT-PT)措辞适配
+事件: 本地节日/促销日历接入
+效果: 文化距离 99.43, 策略重建</pre>
+        </div>
+      </div>
+      <p class="compare-note"><strong>刻画</strong>为葡萄牙市场建立 pt_PT 独立标签体系与欧葡措辞适配，并接入本地节日/促销日历。中葡文化距离高达 99.43（&gt;60 需重新设计本地化策略），是中国与欧洲市场差异最大的区域之一。</p>
+    </div>
   </div>
 
   <!-- ═══ 评估 ═══ -->
@@ -414,10 +504,15 @@ a:hover{text-decoration:underline}
 // 对比标签页切换
 (function(){
   var tabs = document.querySelectorAll('.compare-tabs .tab');
+  var panels = document.querySelectorAll('.compare-panel');
   tabs.forEach(function(tab){
     tab.addEventListener('click', function(){
+      var target = tab.getAttribute('data-tab');
       tabs.forEach(function(t){ t.classList.remove('active'); });
       tab.classList.add('active');
+      panels.forEach(function(p){ p.classList.remove('active'); });
+      var activePanel = document.getElementById('panel-' + target);
+      if(activePanel) activePanel.classList.add('active');
     });
   });
 })();
